@@ -1,0 +1,43 @@
+edition: 3.0.0
+name: web-framework-app
+access: 'undefined'
+vars:
+  region: 'cn-hangzhou'
+  functionName: 'index'
+resources:
+  framework:
+    component: fc3
+    actions:
+      pre-deploy:
+        - run: export PATH=/usr/local/versions/node/v20.8.1/bin:$PATH && npm install
+          path: ./code 
+        - run: export PATH=/usr/local/versions/node/v20.8.1/bin:$PATH && npm run build
+          path: ./code
+        - plugin: website-plugin-v3
+          args:
+            port: 80            # 监听端口, http 为 80, https 为 443
+            dist: /code/out    # build 后生成的代码目录, 以根目录文件夹名称作为绝对路径
+    props:
+      region: ${vars.region}
+      description: Serverless Devs Web Framework Function
+      runtime: custom.debian10
+      timeout: 60
+      functionName: ${vars.functionName}
+      code: ./code
+      triggers:
+        - triggerName: httpTrigger
+          triggerType: http
+          triggerConfig:
+            authType: anonymous
+            methods:
+              - GET
+  fc3_domain_0:
+    component: fc3-domain
+    props:
+      region: ${vars.region}
+      domainName: auto
+      protocol: HTTP
+      routeConfig:
+        routes:
+          - path: /*
+            functionName: ${vars.functionName}
